@@ -96,14 +96,6 @@ void ssd1306_setActiveArea (uint8_t startColumn, uint8_t endColumn, uint8_t star
         SSD1306_COLUMNADDR, startColumn, endColumn,
         SSD1306_PAGEADDR, startPage, endPage };
     USI_TWI_Start_Transceiver_With_Data(buf, sizeof(buf));
-
-    /*ssd1306_command(SSD1306_COLUMNADDR);
-    ssd1306_command(startColumn);   // 0->
-    ssd1306_command(endColumn);     // <-(SSD1306_LCDWIDTH-1)
-
-    ssd1306_command(SSD1306_PAGEADDR);
-    ssd1306_command(startPage);     // 0->
-    ssd1306_command(endPage);       // <-(SSD1306_LCDHEIGHT/8-1)*/
 }
 
 void ssd1306_writeData(SSD1306_Datagram_t *data, uint8_t lenght)
@@ -111,34 +103,7 @@ void ssd1306_writeData(SSD1306_Datagram_t *data, uint8_t lenght)
     data->i2caddr = ssd1306_i2caddr << 1;
     data->mode = 0x40;
     USI_TWI_Start_Transceiver_With_Data(&(data->i2caddr), lenght+2);
-    /*ssd1306_buffer[0] = ssd1306_i2caddr << 1;
-    ssd1306_buffer[1] = 0x40;
-    USI_TWI_Start_Transceiver_With_Data(ssd1306_buffer, lenght+2);*/
 }
-
-//static uint8_t buffer[18];
-/*void ssd1306_display()
-{
-    ssd1306_command(SSD1306_COLUMNADDR);
-    ssd1306_command(63);   // Column start address (0 = reset)
-    ssd1306_command(SSD1306_LCDWIDTH-1); // Column end address (127 = reset)
-
-    ssd1306_command(SSD1306_PAGEADDR);
-    ssd1306_command(0); // Page start address (0 = reset)
-
-#if SSD1306_LCDHEIGHT == 64
-    ssd1306_command(7); // Page end address
-#elif SSD1306_LCDHEIGHT == 32
-    ssd1306_command(3); // Page end address
-#elif SSD1306_LCDHEIGHT == 16
-    ssd1306_command(1); // Page end address
-#endif
-
-    memset(buffer, 0x55, sizeof(buffer));
-    buffer[0] = ssd1306_i2caddr << 1;
-    buffer[1] = 0x40;   // D/C# Data
-    USI_TWI_Start_Transceiver_With_Data(buffer, 3);
-}*/
 
 void ssd1306_clear() {
 #if SSD1306_LCDHEIGHT == 64
