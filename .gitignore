@@ -1,3 +1,13 @@
+# OS junk files
+[Tt]humbs.db
+*.DS_Store
+
+[Oo]bj/
+[Bb]in
+[Dd]ebug*/
+[Rr]elease*/
+.vs/*
+
 # Prerequisites
 *.d
 
