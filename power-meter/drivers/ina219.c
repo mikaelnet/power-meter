@@ -10,15 +10,17 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include <util/delay.h>
+
 #include "ina219.h"
 #include "USI_TWI_Master.h"
 
-static uint8_t ina219_addr;
+static uint8_t i2c_addr;
 static uint8_t ina219_message[4];
 
 static void writeRegister (uint8_t reg, uint16_t value) 
 {
-	ina219_message[0] = (ina219_addr << 1);
+	ina219_message[0] = (i2c_addr << 1);
 	ina219_message[1] = reg;
 	ina219_message[2] = (value >> 8) & 0xFF;
 	ina219_message[3] = value & 0xFF;
@@ -28,20 +30,20 @@ static void writeRegister (uint8_t reg, uint16_t value)
 
 static void readRegister (uint8_t reg, uint16_t *value) 
 {
-	ina219_message[0] = (ina219_addr << 1);
+	ina219_message[0] = (i2c_addr << 1);
 	ina219_message[1] = reg;
 	
 	USI_TWI_Start_Transceiver_With_Data(ina219_message, 2);
 	_delay_ms(1);
 	
-	ina219_message[0] = (ina219_addr << 1) | 0x01;	// I2C read
+	ina219_message[0] = (i2c_addr << 1) | 0x01;	// I2C read
 	USI_TWI_Start_Transceiver_With_Data(ina219_message, 3);
 	*value = (ina219_message[1] << 8) | ina219_message[2];
 }
 
 void ina219_begin (uint8_t addr)
 {
-	ina219_addr = addr;
+	i2c_addr = addr;
 }
 
 static int16_t getBusVoltage_raw() {
@@ -50,7 +52,79 @@ static int16_t getBusVoltage_raw() {
 	return (int16_t)((value >> 3) * 4);
 }
 
-extern void ina219_calibrate (INA219_Calibration_t mode);
-extern uint16_t ina219_getBusVoltage();
-extern uint16_t ina219_getShuntVoltage();
-extern uint16_t ina219_getCurrent();
+static uint32_t ina219_calValue;
+static uint32_t ina219_currentDivider_mA;
+static uint32_t ina219_powerDivider_mW;
+void ina219_calibrate (INA219_Calibration_t mode) 
+{
+    uint16_t config;
+    switch (mode) {
+        case Mode_32V_2A:
+            ina219_calValue = 4096;
+            ina219_currentDivider_mA = 10;
+            ina219_powerDivider_mW = 2;
+
+            writeRegister(INA219_REG_CALIBRATION, ina219_calValue);
+            config = INA219_CONFIG_BVOLTAGERANGE_32V |
+                INA219_CONFIG_GAIN_8_320MV |
+                INA219_CONFIG_BADCRES_12BIT |
+                INA219_CONFIG_SADCRES_12BIT_1S_532US |
+                INA219_CONFIG_MODE_SANDBVOLT_CONTINUOUS;
+            writeRegister(INA219_REG_CONFIG, config);
+            break;
+        
+        case Mode_32V_1A:
+            ina219_calValue = 10240;
+            ina219_currentDivider_mA = 25;  
+            ina219_powerDivider_mW = 1;  
+            writeRegister(INA219_REG_CALIBRATION, ina219_calValue);
+            config = INA219_CONFIG_BVOLTAGERANGE_32V |
+                INA219_CONFIG_GAIN_8_320MV |
+                INA219_CONFIG_BADCRES_12BIT |
+                INA219_CONFIG_SADCRES_12BIT_1S_532US |
+                INA219_CONFIG_MODE_SANDBVOLT_CONTINUOUS;
+            writeRegister(INA219_REG_CONFIG, config);
+            break;
+
+        case Mode_16V_400mA:
+            ina219_calValue = 8192;
+            ina219_currentDivider_mA = 20;
+            ina219_powerDivider_mW = 1;
+            writeRegister(INA219_REG_CALIBRATION, ina219_calValue);
+            config = INA219_CONFIG_BVOLTAGERANGE_16V |
+                INA219_CONFIG_GAIN_1_40MV |
+                INA219_CONFIG_BADCRES_12BIT |
+                INA219_CONFIG_SADCRES_12BIT_1S_532US |
+                INA219_CONFIG_MODE_SANDBVOLT_CONTINUOUS;
+            writeRegister(INA219_REG_CONFIG, config);
+            break;
+    }
+}
+
+int16_t ina219_getBusVoltage() {
+    return getBusVoltage_raw();
+}
+
+int16_t ina219_getShuntVoltage()
+{
+    uint16_t value;
+    readRegister(INA219_REG_SHUNTVOLTAGE, &value);
+    return (int16_t)value;
+}
+
+float ina219_getCurrent_mA()
+{
+    uint16_t value;
+
+    // Sometimes a sharp load will reset the INA219, which will
+    // reset the cal register, meaning CURRENT and POWER will
+    // not be available ... avoid this by always setting a cal
+    // value even if it's an unfortunate extra step
+    writeRegister(INA219_REG_CALIBRATION, ina219_calValue);
+
+    // Now we can safely read the CURRENT register!
+    readRegister(INA219_REG_CURRENT, &value);
+
+    float valueDec = (float)value / ina219_currentDivider_mA;
+    return valueDec;
+}

@@ -138,10 +138,28 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="drivers\font5x7.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="drivers\font5x7.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="drivers\ina219.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="drivers\ina219.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="drivers\oled_ssd1306.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="drivers\oled_ssd1306.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="drivers\timer.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="drivers\timer.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="drivers\USI_TWI_Master.c">

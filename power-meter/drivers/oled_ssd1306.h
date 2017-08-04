@@ -80,8 +80,6 @@ typedef struct SSD1306_Datagram {
 //extern uint8_t* ssd1306_data;
 
 extern void ssd1306_begin(uint8_t vccstate, uint8_t i2caddr);
-extern void ssd1306_command(uint8_t command);
-extern void ssd1306_display();
 extern void ssd1306_clear();
 extern void ssd1306_dim(bool dim);
 

@@ -13,34 +13,36 @@
 #include "oled_ssd1306.h"
 #include "USI_TWI_Master.h"
 
-static uint8_t ssd1306_i2caddr;
-static uint8_t ssd1306_vccstate;
+static uint8_t i2caddr;
+static uint8_t vccstate;
+static uint8_t command_message[10];
 
-static uint8_t ssd1306_command_message[3];
-/*static uint8_t ssd1306_buffer[2+SSD1306_LCDWIDTH];
-uint8_t* ssd1306_data = &ssd1306_buffer[2];*/
-
-void ssd1306_begin(uint8_t vccstate, uint8_t i2caddr)
+void ssd1306_command(uint8_t command)
 {
-    ssd1306_vccstate = vccstate;
-    ssd1306_i2caddr = i2caddr;
-    ssd1306_command_message[0] = i2caddr << 1;
-    ssd1306_command_message[1] = 0x00; // Co = 0, D/C = 0
+    uint8_t *ptr = command_message;
+    *ptr++ = i2caddr << 1;
+    *ptr++ = 0x00;
+    *ptr = command;
+    USI_TWI_Start_Transceiver_With_Data(command_message, 2+1);
+}
+
+void ssd1306_begin(uint8_t vccState, uint8_t i2cAddr)
+{
+    i2caddr = i2cAddr;
+    vccstate = vccState;
+
+    command_message[0] = i2caddr << 1;
+    command_message[1] = 0x00; // Co = 0, D/C = 0
 
     // Init sequence
     ssd1306_command(SSD1306_DISPLAYOFF);                    // 0xAE
-    uint8_t errorState = USI_TWI_Get_State_Info();
-    if (errorState == USI_TWI_NO_ACK_ON_ADDRESS) {
-        PORTB |= _BV(PB4);
-        return;
-    }
 
     ssd1306_command(SSD1306_SETDISPLAYCLOCKDIV);            // 0xD5
     ssd1306_command(0x80);                                  // the suggested ratio 0x80
 
     ssd1306_command(SSD1306_SETMULTIPLEX);                  // 0xA8
     ssd1306_command(SSD1306_LCDHEIGHT - 1);                 // 0x7F or 0x5F
-
+    
     ssd1306_command(SSD1306_SETDISPLAYOFFSET);              // 0xD3
     ssd1306_command(0x0);                                   // no offset
     ssd1306_command(SSD1306_SETSTARTLINE | 0x0);            // line #0
@@ -82,25 +84,23 @@ void ssd1306_begin(uint8_t vccstate, uint8_t i2caddr)
     ssd1306_command(SSD1306_DISPLAYON);                     // 0xAF
 }
 
-void ssd1306_command(uint8_t command)
-{
-    // ssd1306_command_message[0] = i2c address (always the same)
-    // ssd1306_command_message[1] = command (always zero)
-    ssd1306_command_message[2] = command;
-    USI_TWI_Start_Transceiver_With_Data(ssd1306_command_message, 3);
-}
-
 void ssd1306_setActiveArea (uint8_t startColumn, uint8_t endColumn, uint8_t startPage, uint8_t endPage)
 {
-    uint8_t buf[8] = { ssd1306_i2caddr << 1, 0x00,
-        SSD1306_COLUMNADDR, startColumn, endColumn,
-        SSD1306_PAGEADDR, startPage, endPage };
-    USI_TWI_Start_Transceiver_With_Data(buf, sizeof(buf));
+    uint8_t *ptr = command_message;
+    *ptr++ = i2caddr << 1;
+    *ptr++ = 0x00;
+    *ptr++ = SSD1306_COLUMNADDR;
+    *ptr++ = startColumn;
+    *ptr++ = endColumn;
+    *ptr++ = SSD1306_PAGEADDR;
+    *ptr++ = startPage;
+    *ptr = endPage;
+    USI_TWI_Start_Transceiver_With_Data(command_message, 2+6);
 }
 
 void ssd1306_writeData(SSD1306_Datagram_t *data, uint8_t lenght)
 {
-    data->i2caddr = ssd1306_i2caddr << 1;
+    data->i2caddr = i2caddr << 1;
     data->mode = 0x40;
     USI_TWI_Start_Transceiver_With_Data(&(data->i2caddr), lenght+2);
 }
@@ -117,7 +117,7 @@ void ssd1306_clear() {
 
     uint8_t buffer[10];
     memset(buffer, 0x00, sizeof(buffer));
-    buffer[0] = ssd1306_i2caddr << 1;
+    buffer[0] = i2caddr << 1;
     buffer[1] = 0x40;   // D/C# Data
     for (uint8_t i = 0 ; i < (SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8)/(sizeof(buffer)-2) ; i ++) {
         USI_TWI_Start_Transceiver_With_Data(buffer, sizeof(buffer));
@@ -131,7 +131,7 @@ void ssd1306_dim(bool dim)
         contrast = 0;
     }
     else {
-        contrast = ssd1306_vccstate == SSD1306_EXTERNALVCC ? 0x9F : 0xCF;
+        contrast = vccstate == SSD1306_EXTERNALVCC ? 0x9F : 0xCF;
     }
 
     ssd1306_command(SSD1306_SETCONTRAST);

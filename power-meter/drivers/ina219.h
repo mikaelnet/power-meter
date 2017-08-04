@@ -62,7 +62,7 @@
 #define INA219_REG_CURRENT                      (0x04)  // CURRENT REGISTER (R)
 #define INA219_REG_CALIBRATION                  (0x05)  // CALIBRATION REGISTER (R/W)
 
-enum INA219_Calibration {
+typedef enum INA219_Calibration {
     Mode_32V_2A,
     Mode_32V_1A,
     Mode_16V_400mA,
@@ -70,8 +70,8 @@ enum INA219_Calibration {
 
 extern void ina219_begin (uint8_t addr);
 extern void ina219_calibrate (INA219_Calibration_t mode);
-extern uint16_t ina219_getBusVoltage();
-extern uint16_t ina219_getShuntVoltage();
-extern uint16_t ina219_getCurrent();
+extern int16_t ina219_getBusVoltage();
+extern int16_t ina219_getShuntVoltage();
+extern float ina219_getCurrent_mA();
 
 #endif /* INA219_H_ */
