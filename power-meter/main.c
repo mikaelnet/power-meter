@@ -48,13 +48,15 @@ void printTime()
     uint8_t *ptr = oledData.buffer;
     uint8_t length = drawString(ptr, str);
 
-    ssd1306_setActiveArea(128-length, 128-1, 3, 3);
+    ssd1306_setActiveArea(128-length, 128-1, 0, 0);
     ssd1306_writeData(&oledData, length);
 }
 
+static int16_t busVoltage, shuntVoltage;
+static float current;
 void printBusVoltage() 
 {
-    int16_t busVoltage = ina219_getBusVoltage();
+    busVoltage = ina219_getBusVoltage();
     char str[20];
     snprintf_P(str, sizeof(str), PSTR("Bus: %d.%03dmV"), busVoltage / 1000, busVoltage % 1000);
 
@@ -67,7 +69,7 @@ void printBusVoltage()
 
 void printShuntVoltage() {
     char str[20];
-    int16_t shuntVoltage = ina219_getShuntVoltage();
+    shuntVoltage = ina219_getShuntVoltage();
     snprintf_P(str, sizeof(str), PSTR("Shunt: %d.%02dmV"), shuntVoltage / 100, shuntVoltage % 100);
     
     uint8_t *ptr = oledData.buffer;
@@ -79,15 +81,36 @@ void printShuntVoltage() {
 
 void printCurrent() {
     char str[20];
-    float current = ina219_getCurrent_mA();
+    current = ina219_getCurrent_mA();
     int decimal = current;
     uint8_t fragment = ((int)(current*100.0))%100;
-    snprintf_P(str, sizeof(str), PSTR("Shunt: %d.%02dmA"), decimal, fragment);
+    
+    snprintf_P(str, sizeof(str), PSTR("Current: %d.%02dmA"), decimal, fragment);
     
     uint8_t *ptr = oledData.buffer;
     uint8_t length = drawString(ptr, str);
 
     ssd1306_setActiveArea(0, length, 2, 2);
+    ssd1306_writeData(&oledData, length);
+}
+
+void printPower() {
+    uint16_t clock = timer_clock >> 2;
+    float power = busVoltage * current / 1000;
+    float mAhour = current * ((float)clock/3.6);
+    char str[20];
+
+    int d1 = power;
+    uint8_t f1 = ((int)(power*100.0))%100;
+    int d2 = mAhour;
+    uint8_t f2 = ((int)(mAhour*10.0))%10;
+
+    snprintf_P(str, sizeof(str), PSTR("%d.%02dmW %d.%01duAh"), d1, f1, d2, f2);
+    
+    uint8_t *ptr = oledData.buffer;
+    uint8_t length = drawString(ptr, str);
+
+    ssd1306_setActiveArea(0, length, 3, 3);
     ssd1306_writeData(&oledData, length);
 }
 
@@ -107,7 +130,7 @@ int main(void)
         oledData.buffer[i+8] = 1 << (7-i);
         oledData.buffer[i+16] = oledData.buffer[i+24] = (i & 1) ? 0x55 : 0xAA;
     }
-    ssd1306_setActiveArea(128-16, 127, 0, 1);
+    ssd1306_setActiveArea(128-16, 127, 1, 2);
     ssd1306_writeData(&oledData, 32);
 
     /* Replace with your application code */
@@ -122,6 +145,7 @@ int main(void)
             printBusVoltage();
             printShuntVoltage();
             printCurrent();
+            printPower();
         }
     }
 }
