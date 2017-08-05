@@ -26,6 +26,9 @@
 *                     success of the transmission.
 *
 ****************************************************************************/
+
+#ifndef SWI2C
+
 #include <avr/io.h>
 #include "USI_TWI_Master.h"
 #include <util/delay.h>
@@ -254,3 +257,5 @@ unsigned char USI_TWI_Master_Stop( void )
 
   return (TRUE);
 }
+
+#endif /* 0 */

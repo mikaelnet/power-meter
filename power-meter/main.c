@@ -15,12 +15,12 @@
 #include <stdio.h>
 
 #include "drivers/timer.h"
-#include "drivers/USI_TWI_Master.h"
+#include "drivers/i2c_soft.h"
 #include "drivers/oled_ssd1306.h"
 #include "drivers/ina219.h"
 #include "drivers/font5x7.h"
 
-SSD1306_Datagram_t oledData;
+//SSD1306_Datagram_t oledData;
 
 uint8_t* drawChar (uint8_t *ptr, uint8_t ch)
 {
@@ -45,11 +45,11 @@ void printTime()
     char str[6];
     snprintf_P(str, sizeof(str), PSTR("%02d:%02d"), clock / 60, clock % 60);
     
-    uint8_t *ptr = oledData.buffer;
+    uint8_t *ptr = oled_data;
     uint8_t length = drawString(ptr, str);
 
     ssd1306_setActiveArea(128-length, 128-1, 0, 0);
-    ssd1306_writeData(&oledData, length);
+    ssd1306_writeData(oled_data, length);
 }
 
 static int16_t busVoltage, shuntVoltage;
@@ -58,25 +58,25 @@ void printBusVoltage()
 {
     busVoltage = ina219_getBusVoltage();
     char str[20];
-    snprintf_P(str, sizeof(str), PSTR("Bus: %d.%03dmV"), busVoltage / 1000, busVoltage % 1000);
+    snprintf_P(str, sizeof(str), PSTR("Bus: %d.%03dmV "), busVoltage / 1000, busVoltage % 1000);
 
-    uint8_t *ptr = oledData.buffer;
+    uint8_t *ptr = oled_data;
     uint8_t length = drawString(ptr, str);
     
     ssd1306_setActiveArea(0, length, 0, 0);
-    ssd1306_writeData(&oledData, length);
+    ssd1306_writeData(oled_data, length);
 }
 
 void printShuntVoltage() {
     char str[20];
     shuntVoltage = ina219_getShuntVoltage();
-    snprintf_P(str, sizeof(str), PSTR("Shunt: %d.%02dmV"), shuntVoltage / 100, shuntVoltage % 100);
+    snprintf_P(str, sizeof(str), PSTR("Shunt: %d.%02dmV "), shuntVoltage / 100, shuntVoltage % 100);
     
-    uint8_t *ptr = oledData.buffer;
+    uint8_t *ptr = oled_data;
     uint8_t length = drawString(ptr, str);
 
     ssd1306_setActiveArea(0, length, 1, 1);
-    ssd1306_writeData(&oledData, length);
+    ssd1306_writeData(oled_data, length);
 }
 
 void printCurrent() {
@@ -85,13 +85,13 @@ void printCurrent() {
     int decimal = current;
     uint8_t fragment = ((int)(current*100.0))%100;
     
-    snprintf_P(str, sizeof(str), PSTR("Current: %d.%02dmA"), decimal, fragment);
+    snprintf_P(str, sizeof(str), PSTR("Current: %d.%02dmA "), decimal, fragment);
     
-    uint8_t *ptr = oledData.buffer;
+    uint8_t *ptr = oled_data;
     uint8_t length = drawString(ptr, str);
 
     ssd1306_setActiveArea(0, length, 2, 2);
-    ssd1306_writeData(&oledData, length);
+    ssd1306_writeData(oled_data, length);
 }
 
 void printPower() {
@@ -105,19 +105,19 @@ void printPower() {
     int d2 = mAhour;
     uint8_t f2 = ((int)(mAhour*10.0))%10;
 
-    snprintf_P(str, sizeof(str), PSTR("%d.%02dmW %d.%01duAh"), d1, f1, d2, f2);
+    snprintf_P(str, sizeof(str), PSTR("%d.%02dmW %d.%01duAh "), d1, f1, d2, f2);
     
-    uint8_t *ptr = oledData.buffer;
+    uint8_t *ptr = oled_data;
     uint8_t length = drawString(ptr, str);
 
     ssd1306_setActiveArea(0, length, 3, 3);
-    ssd1306_writeData(&oledData, length);
+    ssd1306_writeData(oled_data, length);
 }
 
 int main(void)
 {
     timer1_begin();
-    USI_TWI_Master_Initialise();
+    i2c_begin();
 
     sei();
     ina219_begin(INA219_ADDRESS);
@@ -126,18 +126,24 @@ int main(void)
     ssd1306_clear();
     
     for (int8_t i=0 ; i < 8 ; i ++) {
-        oledData.buffer[i] = 1 << i;
-        oledData.buffer[i+8] = 1 << (7-i);
-        oledData.buffer[i+16] = oledData.buffer[i+24] = (i & 1) ? 0x55 : 0xAA;
+        oled_data[i] = 1 << i;
+        oled_data[i+8] = 1 << (7-i);
+        oled_data[i+16] = oled_data[i+24] = (i & 1) ? 0x55 : 0xAA;
     }
     ssd1306_setActiveArea(128-16, 127, 1, 2);
-    ssd1306_writeData(&oledData, 32);
+    ssd1306_writeData(oled_data, 32);
 
     /* Replace with your application code */
-    bool state = false, lastState = false;
+    //bool state = false, lastState = false;
     while (1) 
     {
-        state = timer_clock & 1;
+        if ( (PINB & _BV(PORTB3)) == 0 ) {
+            ina219_calibrate(Mode_16V_400mA);
+            printBusVoltage();
+            _delay_ms(500);
+        }
+        
+        /*state = timer_clock & 1;
         if (state != lastState) {
             //ssd1306_dim(state);
             lastState = state;
@@ -146,7 +152,7 @@ int main(void)
             printShuntVoltage();
             printCurrent();
             printPower();
-        }
+        }*/
     }
 }
 

@@ -27,6 +27,17 @@
 *
 ****************************************************************************/
 
+#ifndef USI_TWI_MASTER_H_
+#define USI_TWI_MASTER_H_
+
+#ifdef SWI2C
+
+#include "i2c_soft.h"
+#define USI_TWI_Master_Initialise   i2c_begin
+#define USI_TWI_Start_Transceiver_With_Data i2c_startTransceiverWithData
+
+#else
+
 #include<avr/io.h> 
 //********** Defines **********//
 
@@ -120,3 +131,7 @@
 void          USI_TWI_Master_Initialise( void );
 unsigned char USI_TWI_Start_Transceiver_With_Data( unsigned char * , unsigned char );
 unsigned char USI_TWI_Get_State_Info( void );
+
+#endif /* 0 */
+
+#endif /* USI_TWI_MASTER_H_ */

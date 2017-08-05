@@ -13,48 +13,55 @@
 #include <util/delay.h>
 
 #include "ina219.h"
-#include "USI_TWI_Master.h"
+#include "i2c_soft.h"
 
 static uint8_t i2c_addr;
-static uint8_t ina219_message[4];
+//static uint8_t ina219_message[4];
 
 static void writeRegister (uint8_t reg, uint16_t value) 
 {
-	ina219_message[0] = (i2c_addr << 1);
-	ina219_message[1] = reg;
-	ina219_message[2] = (value >> 8) & 0xFF;
-	ina219_message[3] = value & 0xFF;
-	
-	USI_TWI_Start_Transceiver_With_Data(ina219_message, 4);
+    i2c_start();
+    i2c_writeByte(I2C_WRITE_ADDR(i2c_addr));
+    i2c_writeByte(reg);
+    i2c_writeByte((value >> 8) & 0xFF);
+    i2c_writeByte(value & 0xFF);
+    i2c_stop();
 }
 
-static void readRegister (uint8_t reg, uint16_t *value) 
+static uint16_t readRegister (uint8_t reg) 
 {
-	ina219_message[0] = (i2c_addr << 1);
-	ina219_message[1] = reg;
-	
-	USI_TWI_Start_Transceiver_With_Data(ina219_message, 2);
-	_delay_ms(1);
-	
-	ina219_message[0] = (i2c_addr << 1) | 0x01;	// I2C read
-	USI_TWI_Start_Transceiver_With_Data(ina219_message, 3);
-	*value = (ina219_message[1] << 8) | ina219_message[2];
+    uint16_t value;
+
+    i2c_start();
+    i2c_writeByte(I2C_WRITE_ADDR(i2c_addr));
+    i2c_writeByte(reg);
+    i2c_stop();
+
+    _delay_ms(1);
+
+    i2c_start();
+    i2c_writeByte(I2C_READ_ADDR(i2c_addr));
+    value = i2c_readByte(true) << 8;
+    value |= i2c_readByte(true);
+    i2c_stop();
+
+    return value;
 }
 
 void ina219_begin (uint8_t addr)
 {
-	i2c_addr = addr;
+    i2c_addr = addr;
 }
 
 static int16_t getBusVoltage_raw() {
-	uint16_t value;
-	readRegister(INA219_REG_BUSVOLTAGE, &value);
-	return (int16_t)((value >> 3) * 4);
+    uint16_t value = readRegister(INA219_REG_BUSVOLTAGE);
+    return (int16_t)((value >> 3) * 4);
 }
 
 static uint32_t ina219_calValue;
 static uint32_t ina219_currentDivider_mA;
 static uint32_t ina219_powerDivider_mW;
+
 void ina219_calibrate (INA219_Calibration_t mode) 
 {
     uint16_t config;
@@ -108,7 +115,7 @@ int16_t ina219_getBusVoltage() {
 int16_t ina219_getShuntVoltage()
 {
     uint16_t value;
-    readRegister(INA219_REG_SHUNTVOLTAGE, &value);
+    value = readRegister(INA219_REG_SHUNTVOLTAGE);
     return (int16_t)value;
 }
 
@@ -123,7 +130,7 @@ float ina219_getCurrent_mA()
     writeRegister(INA219_REG_CALIBRATION, ina219_calValue);
 
     // Now we can safely read the CURRENT register!
-    readRegister(INA219_REG_CURRENT, &value);
+    value = readRegister(INA219_REG_CURRENT);
 
     float valueDec = (float)value / ina219_currentDivider_mA;
     return valueDec;

@@ -72,18 +72,13 @@
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
 
-typedef struct SSD1306_Datagram {
-    uint8_t i2caddr;
-    uint8_t mode;
-    uint8_t buffer[SSD1306_LCDWIDTH];
-} SSD1306_Datagram_t;
-//extern uint8_t* ssd1306_data;
+extern uint8_t oled_data[SSD1306_LCDWIDTH];
 
 extern void ssd1306_begin(uint8_t vccstate, uint8_t i2caddr);
 extern void ssd1306_clear();
 extern void ssd1306_dim(bool dim);
 
 extern void ssd1306_setActiveArea (uint8_t startColumn, uint8_t endColumn, uint8_t startPage, uint8_t endPage);
-extern void ssd1306_writeData(SSD1306_Datagram_t *data, uint8_t lenght);
+extern void ssd1306_writeData(uint8_t *data, uint8_t lenght);
 
 #endif /* OLED_SSD1306_H_ */
