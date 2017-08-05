@@ -116,7 +116,7 @@ int16_t ina219_getShuntVoltage()
 {
     uint16_t value;
     value = readRegister(INA219_REG_SHUNTVOLTAGE);
-    return (int16_t)value;
+    return (int16_t)value - 18; // Biasing
 }
 
 float ina219_getCurrent_mA()
@@ -132,6 +132,6 @@ float ina219_getCurrent_mA()
     // Now we can safely read the CURRENT register!
     value = readRegister(INA219_REG_CURRENT);
 
-    float valueDec = (float)value / ina219_currentDivider_mA;
+    float valueDec = (float)value / ina219_currentDivider_mA - 1.8;
     return valueDec;
 }

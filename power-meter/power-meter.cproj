@@ -69,7 +69,6 @@
   <avrgcc.compiler.symbols.DefSymbols><ListValues>
   <Value>F_CPU=1000000L</Value>
   <Value>SSD1306_128_32</Value>
-  <Value>SWI2C</Value>
   <Value>TWI_FAST_MODE</Value>
   <Value>NDEBUG</Value>
 </ListValues></avrgcc.compiler.symbols.DefSymbols>
@@ -97,7 +96,6 @@
   <avrgcc.compiler.symbols.DefSymbols><ListValues>
   <Value>F_CPU=1000000L</Value>
   <Value>SSD1306_128_32</Value>
-  <Value>SWI2C</Value>
   <Value>TWI_FAST_MODE</Value>
   <Value>DEBUG</Value>
 </ListValues></avrgcc.compiler.symbols.DefSymbols>
@@ -142,12 +140,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="drivers\timer.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="drivers\USI_TWI_Master.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="drivers\USI_TWI_Master.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.c">

@@ -134,16 +134,16 @@ int main(void)
     ssd1306_writeData(oled_data, 32);
 
     /* Replace with your application code */
-    //bool state = false, lastState = false;
+    bool state = false, lastState = false;
     while (1) 
     {
-        if ( (PINB & _BV(PORTB3)) == 0 ) {
+        /*if ( (PINB & _BV(PORTB3)) == 0 ) {
             ina219_calibrate(Mode_16V_400mA);
             printBusVoltage();
             _delay_ms(500);
-        }
+        }*/
         
-        /*state = timer_clock & 1;
+        state = timer_clock & 1;
         if (state != lastState) {
             //ssd1306_dim(state);
             lastState = state;
@@ -152,7 +152,7 @@ int main(void)
             printShuntVoltage();
             printCurrent();
             printPower();
-        }*/
+        }
     }
 }
 
