@@ -53,11 +53,6 @@ void ina219_begin (uint8_t addr)
     i2c_addr = addr;
 }
 
-static int16_t getBusVoltage_raw() {
-    uint16_t value = readRegister(INA219_REG_BUSVOLTAGE);
-    return (int16_t)((value >> 3) * 4);
-}
-
 static uint32_t ina219_calValue;
 static uint32_t ina219_currentDivider_mA;
 static uint32_t ina219_powerDivider_mW;
@@ -108,15 +103,18 @@ void ina219_calibrate (INA219_Calibration_t mode)
     }
 }
 
-int16_t ina219_getBusVoltage() {
-    return getBusVoltage_raw();
+float ina219_getBusVoltage() {
+    uint16_t value = readRegister(INA219_REG_BUSVOLTAGE);
+    int16_t milliVolt = (int16_t)((value >> 3) * 4);
+    return milliVolt / 1000.0;
 }
 
-int16_t ina219_getShuntVoltage()
+float ina219_getShuntVoltage()
 {
     uint16_t value;
     value = readRegister(INA219_REG_SHUNTVOLTAGE);
-    return (int16_t)value - 18; // Biasing
+    value -= 18;    // Biasing
+    return ((int16_t)value - 18)/100.0;
 }
 
 float ina219_getCurrent_mA()

@@ -18,43 +18,17 @@
 #include "drivers/i2c_soft.h"
 #include "drivers/oled_ssd1306.h"
 #include "drivers/ina219.h"
-#include "drivers/font5x7.h"
+#include "drivers/display.h"
 
-//SSD1306_Datagram_t oledData;
+static float lastVoltage, maxVoltage, minVoltage;
+static float lastCurrent, maxCurrent, minCurrent;
+static float sumVoltage, sumCurrent;
+static uint16_t numSamples;
 
-uint8_t* drawChar (uint8_t *ptr, uint8_t ch)
-{
-    memcpy_P(ptr, font5x7+ch*5, 5);
-    *(ptr+5) = 0x00;
-    return ptr+6;
-}
 
-uint8_t drawString (uint8_t *ptr, char *str)
-{
-    uint8_t length = 0;
-    for (char *s = str ; *s && length <= 128; s++) {
-        ptr = drawChar(ptr, *s);
-        length += 6;
-    }
-    return length;
-}
-
-void printTime() 
-{
-    uint16_t clock = timer_clock >> 2;
-    char str[6];
-    snprintf_P(str, sizeof(str), PSTR("%02d:%02d"), clock / 60, clock % 60);
-    
-    uint8_t *ptr = oled_data;
-    uint8_t length = drawString(ptr, str);
-
-    ssd1306_setActiveArea(128-length, 128-1, 0, 0);
-    ssd1306_writeData(oled_data, length);
-}
-
-static int16_t busVoltage, shuntVoltage;
-static float current;
-void printBusVoltage() 
+//static int16_t busVoltage, shuntVoltage;
+//static float current;
+/*void printBusVoltage() 
 {
     busVoltage = ina219_getBusVoltage();
     char str[20];
@@ -92,9 +66,9 @@ void printCurrent() {
 
     ssd1306_setActiveArea(0, length, 2, 2);
     ssd1306_writeData(oled_data, length);
-}
+}*/
 
-void printPower() {
+/*void printPower() {
     uint16_t clock = timer_clock >> 2;
     float power = busVoltage * current / 1000;
     float mAhour = current * ((float)clock/3.6);
@@ -112,7 +86,7 @@ void printPower() {
 
     ssd1306_setActiveArea(0, length, 3, 3);
     ssd1306_writeData(oled_data, length);
-}
+}*/
 
 int main(void)
 {
@@ -125,25 +99,45 @@ int main(void)
     ssd1306_begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS);
     ssd1306_clear();
     
-    for (int8_t i=0 ; i < 8 ; i ++) {
-        oled_data[i] = 1 << i;
-        oled_data[i+8] = 1 << (7-i);
-        oled_data[i+16] = oled_data[i+24] = (i & 1) ? 0x55 : 0xAA;
-    }
-    ssd1306_setActiveArea(128-16, 127, 1, 2);
-    ssd1306_writeData(oled_data, 32);
+    lastVoltage = ina219_getBusVoltage();
+    lastCurrent = ina219_getCurrent_mA();
+    minVoltage = maxVoltage = lastVoltage;
+    minCurrent = maxCurrent = lastCurrent;
+    sumVoltage = sumCurrent = 0;
+    numSamples = 0;
 
     /* Replace with your application code */
-    bool state = false, lastState = false;
-    while (1) 
+    //bool state = false, lastState = false;
+    uint16_t clock = timer_clock;
+    do 
     {
-        /*if ( (PINB & _BV(PORTB3)) == 0 ) {
-            ina219_calibrate(Mode_16V_400mA);
-            printBusVoltage();
-            _delay_ms(500);
-        }*/
-        
-        state = timer_clock & 1;
+        lastVoltage = ina219_getBusVoltage();
+        lastCurrent = ina219_getCurrent_mA();
+
+        if (lastVoltage < minVoltage)
+            minVoltage = lastVoltage;
+        else if (lastVoltage > maxVoltage)
+            maxVoltage = lastVoltage;
+        if (lastCurrent < minCurrent)
+            minCurrent = lastCurrent;
+        else if (lastCurrent > maxCurrent)
+            maxCurrent = lastCurrent;
+
+        sumVoltage += lastVoltage;
+        sumCurrent += lastCurrent;
+        numSamples ++;
+
+        uint8_t tick = clock & 0x03;
+        if (tick == 0) {
+            printClock (clock >> 2);
+            printVoltage (lastVoltage);
+            printCurrent (lastCurrent);
+            printPower (lastVoltage * lastCurrent);
+            float avgPower = sumVoltage / numSamples * sumCurrent / numSamples;
+            printCharge (avgPower * clock / (3600*4));
+        }
+
+        /*state = timer_clock & 1;
         if (state != lastState) {
             //ssd1306_dim(state);
             lastState = state;
@@ -152,7 +146,17 @@ int main(void)
             printShuntVoltage();
             printCurrent();
             printPower();
-        }
-    }
+        }*/
+
+        // Wait for next timer
+        while (clock == timer_clock)
+            ;
+        clock = timer_clock;
+    } while (true);
 }
 
+        /*if ( (PINB & _BV(PORTB3)) == 0 ) {
+            ina219_calibrate(Mode_16V_400mA);
+            printBusVoltage();
+            _delay_ms(500);
+        }*/

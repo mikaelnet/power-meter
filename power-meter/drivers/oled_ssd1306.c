@@ -15,7 +15,6 @@
 
 static uint8_t i2c_addr;
 static uint8_t vcc_state;
-//static uint8_t command_message[10];
 
 uint8_t oled_data[SSD1306_LCDWIDTH];
 

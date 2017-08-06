@@ -14,14 +14,14 @@
 
 #define SSD1306_I2C_ADDRESS         0x3C    // 011110+SA0+RW, 128x32
 #if defined SSD1306_128_64
-    #define SSD1306_LCDWIDTH                  128
-    #define SSD1306_LCDHEIGHT                 64
+    #define SSD1306_LCDWIDTH        128
+    #define SSD1306_LCDHEIGHT       64
 #elif defined SSD1306_128_32
-    #define SSD1306_LCDWIDTH                  128
-    #define SSD1306_LCDHEIGHT                 32
+    #define SSD1306_LCDWIDTH        128
+    #define SSD1306_LCDHEIGHT       32
 #elif defined SSD1306_96_16
-    #define SSD1306_LCDWIDTH                  96
-    #define SSD1306_LCDHEIGHT                 16
+    #define SSD1306_LCDWIDTH        96
+    #define SSD1306_LCDHEIGHT       16
 #else
     #error No OLED display type defined
 #endif

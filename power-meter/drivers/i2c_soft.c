@@ -8,14 +8,12 @@ www.eXtremeElectronics.co.in
 **********************************************************/
  
 #include <avr/io.h>
-#include <util/delay.h>
+#include <avr/sfr_defs.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <util/delay.h>
 
 #include "i2c_soft.h"
-
-//#define Q_DEL _delay_loop_1(3)
-//#define H_DEL _delay_loop_1(5)
 
 void i2c_begin()
 {
@@ -61,14 +59,12 @@ bool i2c_writeByte (uint8_t data)
         SOFT_I2C_SCL_HIGH;
         _delay_us (T4_TWI/4);
 
-        do {
-            // Wait for SCL pin to go high
-        } while( !(PIN_USI & _BV(PIN_USI_SCL)) );
+        loop_until_bit_is_set (PIN_USI, PIN_USI_SCL);
         
         data <<= 1;
     }
 
-    // The 9th clock (ACK Phase)
+    // ACK phase
     SOFT_I2C_SCL_LOW;
     _delay_us (T2_TWI/4);;
 
@@ -97,15 +93,13 @@ uint8_t i2c_readByte (bool ack)
         SOFT_I2C_SCL_HIGH;
         _delay_us (T4_TWI/4);
 
-        do {
-            // Wait for SCL pin to go high
-        } while( !(PIN_USI & _BV(PIN_USI_SCL)) );
+        loop_until_bit_is_set (PIN_USI, PIN_USI_SCL);
 
-        if (PIN_USI & _BV(PIN_USI_SDA))
+        if (bit_is_set(PIN_USI, PIN_USI_SDA))
             data |= (0x80 >> i);
     }
 
-    // Ack phase
+    // ACK phase
     SOFT_I2C_SCL_LOW;
     _delay_us (T2_TWI/4);;
 
@@ -142,33 +136,3 @@ bool i2c_writeData (uint8_t *data, uint8_t length)
     return ack;
 }
 
-/*
-// For backward compatibility:
-bool i2c_startTransceiverWithData (uint8_t *data, uint8_t length)
-{
-    if ( *data & _BV(0) ) {
-        // read
-        if (length < 3) // Nothing to read
-            return false;
-
-        i2c_start();
-        i2c_writeByteRaw(data[0]);
-        for (uint8_t i=1 ; i < length ; i ++) {
-            data[i] = i2c_readByteRaw(true);
-        }
-        i2c_stop();
-    }
-    else {
-        // write
-        if (length < 2) // Nothing to write
-            return false;
-
-        i2c_start();
-        for (uint8_t i=0 ; i < length ; i ++) {
-            i2c_writeByteRaw(data[i]);
-        }
-        i2c_stop();
-    }
-    return true;
-}
-*/

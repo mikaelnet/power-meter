@@ -70,8 +70,9 @@ typedef enum INA219_Calibration {
 
 extern void ina219_begin (uint8_t addr);
 extern void ina219_calibrate (INA219_Calibration_t mode);
-extern int16_t ina219_getBusVoltage();
-extern int16_t ina219_getShuntVoltage();
+
+extern float ina219_getBusVoltage();
+extern float ina219_getShuntVoltage();
 extern float ina219_getCurrent_mA();
 
 #endif /* INA219_H_ */
