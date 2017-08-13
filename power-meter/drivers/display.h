@@ -17,5 +17,6 @@ extern void printVoltage (float lastVoltage);
 extern void printCurrent (float current);
 extern void printPower (float power);
 extern void printCharge (float value);
+extern void printMaxMinCurrent (float min, float max, float avg);
 
 #endif /* DISPLAY_H_ */

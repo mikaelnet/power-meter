@@ -84,6 +84,18 @@ void ssd1306_begin(uint8_t vccState, uint8_t i2cAddr)
 
 void ssd1306_setActiveArea (uint8_t startColumn, uint8_t endColumn, uint8_t startPage, uint8_t endPage)
 {
+    // Check LCD boundaries
+    if (endColumn > SSD1306_LCDWIDTH-1)
+        endColumn = SSD1306_LCDWIDTH-1;
+    if (endPage > (SSD1306_LCDHEIGHT/4)-1)
+        endPage = (SSD1306_LCDHEIGHT/4)-1;
+    // start values are positive, but must not be larger than end value
+    // if so, set to 0. Alternatively we could limit the space to 1 cell by setting start=end.
+    if (startColumn > endColumn)
+        startColumn = 0;
+    if (startPage > endPage)
+        startPage = 0;
+
     i2c_start();
     i2c_writeByte(I2C_WRITE_ADDR(i2c_addr));
     i2c_writeByte(0x00);

@@ -13,6 +13,7 @@
 #include <util/delay.h>
 
 #include <stdio.h>
+#include <math.h>
 
 #include "drivers/timer.h"
 #include "drivers/i2c_soft.h"
@@ -24,69 +25,6 @@ static float lastVoltage, maxVoltage, minVoltage;
 static float lastCurrent, maxCurrent, minCurrent;
 static float sumVoltage, sumCurrent;
 static uint16_t numSamples;
-
-
-//static int16_t busVoltage, shuntVoltage;
-//static float current;
-/*void printBusVoltage() 
-{
-    busVoltage = ina219_getBusVoltage();
-    char str[20];
-    snprintf_P(str, sizeof(str), PSTR("Bus: %d.%03dmV "), busVoltage / 1000, busVoltage % 1000);
-
-    uint8_t *ptr = oled_data;
-    uint8_t length = drawString(ptr, str);
-    
-    ssd1306_setActiveArea(0, length, 0, 0);
-    ssd1306_writeData(oled_data, length);
-}
-
-void printShuntVoltage() {
-    char str[20];
-    shuntVoltage = ina219_getShuntVoltage();
-    snprintf_P(str, sizeof(str), PSTR("Shunt: %d.%02dmV "), shuntVoltage / 100, shuntVoltage % 100);
-    
-    uint8_t *ptr = oled_data;
-    uint8_t length = drawString(ptr, str);
-
-    ssd1306_setActiveArea(0, length, 1, 1);
-    ssd1306_writeData(oled_data, length);
-}
-
-void printCurrent() {
-    char str[20];
-    current = ina219_getCurrent_mA();
-    int decimal = current;
-    uint8_t fragment = ((int)(current*100.0))%100;
-    
-    snprintf_P(str, sizeof(str), PSTR("Current: %d.%02dmA "), decimal, fragment);
-    
-    uint8_t *ptr = oled_data;
-    uint8_t length = drawString(ptr, str);
-
-    ssd1306_setActiveArea(0, length, 2, 2);
-    ssd1306_writeData(oled_data, length);
-}*/
-
-/*void printPower() {
-    uint16_t clock = timer_clock >> 2;
-    float power = busVoltage * current / 1000;
-    float mAhour = current * ((float)clock/3.6);
-    char str[20];
-
-    int d1 = power;
-    uint8_t f1 = ((int)(power*100.0))%100;
-    int d2 = mAhour;
-    uint8_t f2 = ((int)(mAhour*10.0))%10;
-
-    snprintf_P(str, sizeof(str), PSTR("%d.%02dmW %d.%01duAh "), d1, f1, d2, f2);
-    
-    uint8_t *ptr = oled_data;
-    uint8_t length = drawString(ptr, str);
-
-    ssd1306_setActiveArea(0, length, 3, 3);
-    ssd1306_writeData(oled_data, length);
-}*/
 
 int main(void)
 {
@@ -132,9 +70,11 @@ int main(void)
             printClock (clock >> 2);
             printVoltage (lastVoltage);
             printCurrent (lastCurrent);
-            printPower (lastVoltage * lastCurrent);
+            printPower (fabs(lastVoltage * lastCurrent));
             float avgPower = sumVoltage / numSamples * sumCurrent / numSamples;
-            printCharge (avgPower * clock / (3600*4));
+            printCharge (fabs(avgPower * clock / (3600*4)));
+            float avgCurrent = sumCurrent / numSamples;
+            printMaxMinCurrent(minCurrent, maxCurrent, avgCurrent);
         }
 
         /*state = timer_clock & 1;
